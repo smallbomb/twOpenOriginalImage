@@ -86,4 +86,7 @@
 ,   "TAB_SORTING_ENABLED" : {
         "message" : "[1][2][3][4]"
     }
+,   "DOMATION" : {
+        "message" : "선물은 환영합니다 !"
+    }
 }
