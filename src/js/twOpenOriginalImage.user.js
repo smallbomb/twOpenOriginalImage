@@ -2,7 +2,7 @@
 // @name            twOpenOriginalImage
 // @namespace       http://furyu.hatenablog.com/
 // @author          furyu
-// @version         0.1.8.15
+// @version         0.1.8.16
 // @include         http://twitter.com/*
 // @include         https://twitter.com/*
 // @include         https://mobile.twitter.com/*
@@ -675,7 +675,7 @@ function normalize_img_url( source_url ) {
         return source_url;
     }
     
-    if ( [ 'thumb', 'small', 'medium', 'large', 'orig' ].indexOf( name ) < 0 ) {
+    if ( [ 'thumb', 'small', 'medium', 'large', 'orig', '900x900' ].indexOf( name ) < 0 ) {
         name = '';
     }
     
@@ -1402,7 +1402,7 @@ function initialize_download_helper() {
     
     var link_container = d.createElement( 'div' ),
         link_container_style = link_container.style,
-        kind_list = [ 'thumb', 'small', 'medium', 'large', 'orig' ],
+        kind_list = [ 'thumb', 'small', '900x900', 'medium', 'large', 'orig' ],
         current_kind = get_img_kind( img_url ),
         fadeout = true,
         initial_fadeout_limit_msec = 1500,
@@ -3934,7 +3934,7 @@ function initialize( user_options ) {
             */
             
             tweet_list = to_array( node.querySelectorAll( 'div[data-testid="primaryColumn"] article[role="article"]' ) ).filter( ( article ) => {
-                if ( article.querySelector( 'div[data-testid="tweet"]' ) && article.querySelector( 'div[aria-label] > img' ) ) {
+                if ( ( ( article.getAttribute( 'data-testid' ) == 'tweet' ) || article.querySelector( 'div[data-testid="tweet"]' ) ) && article.querySelector( 'div[aria-label] > img' ) ) {
                     return ( !! add_open_button( article ) );
                 }
                 return false;
@@ -4217,7 +4217,8 @@ function initialize( user_options ) {
                 target_tweet = region.querySelector( 'article[role="article"][data-focusvisible-polyfill="true"]' );
                 
                 if ( ! target_tweet ) {
-                    target_tweet = region.querySelector( 'article[role="article"] [data-testid="tweet"]' );
+                    //target_tweet = region.querySelector( 'article[role="article"] [data-testid="tweet"]' );
+                    target_tweet = region.querySelector( 'article[role="article"][data-testid="tweet"], article[role="article"] [data-testid="tweet"]' );
                     if ( target_tweet ) {
                         target_tweet = search_ancestor_by_attribute( target_tweet, 'role', 'article' );
                     }
