@@ -138,8 +138,8 @@ var OPTIONS = {
 ,   SMOOTH_SCROLL_INTERVAL : 10 // オーバーレイ表示時のスムーズスクロールの間隔(ms)
 ,   DEFAULT_IMAGE_SIZE : 'fit-window' // オーバーレイ表示時の画像幅初期値 ( 'full' / 'fit-width' / 'fit-height' / 'fit-window' )
 ,   DEFAULT_IMAGE_BACKGROUND_COLOR : 'black' // オーバーレイ表示時の画像背景色初期値 ('black' または 'white')
-,   FORMATER_FILENAME: '[{yyyy}-{mm}-{dd}]({username}){twtext}_{tweet_id}_{i}.{ext}'
-/* FORMATER_FILENAME support:
+,   FORMAT_FILENAME: '[{yyyy}-{mm}-{dd}]({username}){twtext}_{tweet_id}_{i}.{ext}'
+/* FORMAT_FILENAME support:
  *    filename:
  *      {base}
  *    tweet create date:
@@ -166,7 +166,7 @@ var OPTIONS = {
 };
 
 const img_filename_format = ( base, yyyy, mm, dd, HH, MM, SS, fullname, username, i, tweet_id, twtext, suffix, ext ) => {
-    let filename = OPTIONS.FORMATER_FILENAME.replace(/{ *base *}/g, base)
+    let filename = OPTIONS.FORMAT_FILENAME.replace(/{ *base *}/g, base)
                                             .replace(/{ *yyyy *}/g, yyyy)
                                             .replace(/{ *mm *}/g, mm)
                                             .replace(/{ *dd *}/g, dd)
