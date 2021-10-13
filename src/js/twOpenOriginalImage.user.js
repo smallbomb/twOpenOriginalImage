@@ -2,7 +2,7 @@
 // @name            twOpenOriginalImage
 // @namespace       http://furyu.hatenablog.com/
 // @author          furyu
-// @version         0.1.8.16
+// @version         0.1.8.16.1
 // @include         http://twitter.com/*
 // @include         https://twitter.com/*
 // @include         https://mobile.twitter.com/*
@@ -61,6 +61,18 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
+
+Date.prototype.format = function (format) {
+    format = format.replace(/yyyy/g, this.getFullYear());
+    format = format.replace(/yy/g, ('' + this.getFullYear()).slice(-2));
+    format = format.replace(/mm/g, ('0' + (this.getMonth() + 1)).slice(-2));
+    format = format.replace(/dd/g, ('0' + this.getDate()).slice(-2));
+    format = format.replace(/HH/g, ('0' + this.getHours()).slice(-2));
+    format = format.replace(/MM/g, ('0' + this.getMinutes()).slice(-2));
+    format = format.replace(/SS/g, ('0' + this.getSeconds()).slice(-2));
+    // format = format.replace(/SSS/g, ('00' + this.getMilliseconds()).slice(-3));
+    return format;
+};
 
 ( function ( w, d ) {
 
@@ -126,8 +138,52 @@ var OPTIONS = {
 ,   SMOOTH_SCROLL_INTERVAL : 10 // オーバーレイ表示時のスムーズスクロールの間隔(ms)
 ,   DEFAULT_IMAGE_SIZE : 'fit-window' // オーバーレイ表示時の画像幅初期値 ( 'full' / 'fit-width' / 'fit-height' / 'fit-window' )
 ,   DEFAULT_IMAGE_BACKGROUND_COLOR : 'black' // オーバーレイ表示時の画像背景色初期値 ('black' または 'white')
+,   FORMATER_FILENAME: '[{yyyy}-{mm}-{dd}]({username}){twtext}_{tweet_id}_{i}.{ext}'
+/* FORMATER_FILENAME support:
+ *    filename:
+ *      {base}
+ *    tweet create date:
+ *      {yyyy} => fullyear
+ *      {mm} => Month
+ *      {dd} => day
+ *      {HH} => hours
+ *      {MM} => minutes
+ *      {SS} => seconds
+ *    author:
+ *      {fullname} => nickname
+ *      {username} => account
+ *    image index:
+ *      {i} => 1, 2, ...
+ *    tweet id:
+ *      {tweet_id}
+ *    tweet text:
+ *      {twtext} => first line only if tweet text have new line character('\n').
+ *    suffix:
+ *      {suffix} => '-orig'
+ *    extension:
+ *      {ext}
+ */    
 };
 
+const img_filename_format = ( base, yyyy, mm, dd, HH, MM, SS, fullname, username, i, tweet_id, twtext, suffix, ext ) => {
+    let filename = OPTIONS.FORMATER_FILENAME.replace(/{ *base *}/g, base)
+                                            .replace(/{ *yyyy *}/g, yyyy)
+                                            .replace(/{ *mm *}/g, mm)
+                                            .replace(/{ *dd *}/g, dd)
+                                            .replace(/{ *HH *}/g, HH)
+                                            .replace(/{ *MM *}/g, MM)
+                                            .replace(/{ *SS *}/g, SS)
+                                            .replace(/{ *fullname *}/g, fullname)
+                                            .replace(/{ *username *}/g, username)
+                                            .replace(/{ *i *}/g, i)
+                                            .replace(/{ *tweet_id *}/g, tweet_id)
+                                            .replace(/{ *twtext *}/g, twtext)
+                                            .replace(/{ *suffix *}/g, suffix)
+                                            .replace(/{ *ext *}/g, ext)
+                                            .replace(/{ *tweet_id *}/g, tweet_id)
+                                            .replace(/{ *tweet_id *}/g, tweet_id);
+    return filename;
+}
 
 // 共通変数
 var DEBUG = false,
@@ -760,17 +816,32 @@ function get_img_filename( img_url ) {
     if ( ! img_url.match( /^.+\/([^\/.]+)\.(\w+):(\w+)$/ ) ) {
         return img_url;
     }
+  
     
     var base = RegExp.$1,
         ext = RegExp.$2,
         suffix = RegExp.$3;
-    
-    if ( OPTIONS.SUPPRESS_FILENAME_SUFFIX ) {
-        return base + '.' + ext;
-    }
-    else {
-        return base + '-' + suffix + '.' + ext;
-    }
+    let image_overlay_close_link = d.querySelector('#' + SCRIPT_NAME + '_image_overlay_header a.' + SCRIPT_NAME + '_close_overlay'),
+        tweet_created_at = new Date(image_overlay_close_link.getAttribute('data-tweet-created-at')),
+        img_urls = JSON.parse(decodeURIComponent(image_overlay_close_link.getAttribute('data-all-img-urls'))),
+        yyyy = tweet_created_at.format('yyyy'),
+        mm = tweet_created_at.format('mm'),
+        dd = tweet_created_at.format('dd'),
+        HH = tweet_created_at.format('HH'),
+        MM = tweet_created_at.format('MM'),
+        SS = tweet_created_at.format('SS'),
+        fullname = image_overlay_close_link.getAttribute('data-fullname'),
+        username = image_overlay_close_link.getAttribute('data-username'),
+        i = img_urls.findIndex(img_url => img_url.indexOf(base) >= 0) + 1,
+        tweet_id = get_tweet_id_from_tweet_url(image_overlay_close_link.href),
+        twtext = image_overlay_close_link.title.slice(0, image_overlay_close_link.title.indexOf("\n"));
+    return img_filename_format(base, yyyy, mm, dd, HH, MM, SS, fullname, username, i, tweet_id, twtext, suffix, ext);
+    // if ( OPTIONS.SUPPRESS_FILENAME_SUFFIX ) {
+    //     return base + '.' + ext;
+    // }
+    // else {
+    //    return base + '-' + suffix + '.' + ext;
+    // }
 } // end of get_img_filename()
 
 
@@ -2682,7 +2753,7 @@ function initialize( user_options ) {
         } // end of update_overlay_status()
         
         
-        function show_overlay( img_urls, tweet_url, title, start_img_url, tweet, all_img_urls ) {
+        function show_overlay( img_urls, tweet_url, title, start_img_url, tweet, all_img_urls, created_at ) {
             if ( image_overlay_container.style.display != 'none' ) {
                 //log_error( 'show_overlay(): duplicate called' );
                 // TODO: 重複して呼ばれるケース(不正な動作)に対するガード
@@ -2844,6 +2915,7 @@ function initialize( user_options ) {
             
             image_overlay_close_link.href = tweet_url;
             image_overlay_close_link.title = title;
+            image_overlay_close_link.setAttribute('data-tweet-created-at', created_at);
             image_overlay_close_link.setAttribute( 'data-fullname', fullname );
             image_overlay_close_link.setAttribute( 'data-username', username );
             image_overlay_close_link.setAttribute( 'data-timestamp-ms', timestamp_ms );
@@ -3669,7 +3741,7 @@ function initialize( user_options ) {
                 button_container.style.display = 'none';
             }
             
-            add_event( button, 'click', function ( event ) {
+            add_event( button, 'click', async function ( event ) {
                 event.stopPropagation();
                 
                 var focused_img_url = button.getAttribute( 'data-target-img-url' ),
@@ -3706,10 +3778,11 @@ function initialize( user_options ) {
                     }
                     //title = ( tweet_text ) ? ( ( tweet_text.innerText !== undefined ) ? tweet_text.innerText : tweet_text.textContent ) : '';
                     title = ( tweet_text ) ? get_text_from_element( tweet_text ).trim() : '';
-                    
+                    let tweet_id = get_tweet_id_from_tweet_url(tweet_url);
+                    let created_at = await fetch_status(tweet_id).then(r=>r.created_at);
                     if ( OPTIONS.DISPLAY_OVERLAY || ( is_firefox() && is_extension() ) ) {
                         // TODO: Firefox 68.0.1 では about:blank の document が「DOMException: "Permission denied to access property "document" on cross-origin object"」となってアクセス不可のため、常にオーバーレイ表示
-                        show_overlay( target_img_urls, tweet_url, title, focused_img_url, tweet, target_all_img_urls );
+                        show_overlay( target_img_urls, tweet_url, title, focused_img_url, tweet, target_all_img_urls, created_at);
                     }
                     else {
                         open_page( ( focused_img_url ) ? [ focused_img_url ] : target_img_urls, tweet_url, title );
