@@ -179,9 +179,7 @@ const img_filename_format = ( base, yyyy, mm, dd, HH, MM, SS, fullname, username
                                             .replace(/{ *tweet_id *}/g, tweet_id)
                                             .replace(/{ *twtext *}/g, twtext)
                                             .replace(/{ *suffix *}/g, suffix)
-                                            .replace(/{ *ext *}/g, ext)
-                                            .replace(/{ *tweet_id *}/g, tweet_id)
-                                            .replace(/{ *tweet_id *}/g, tweet_id);
+                                            .replace(/{ *ext *}/g, ext);
     return filename;
 }
 
