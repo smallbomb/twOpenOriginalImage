@@ -1,6 +1,6 @@
 twOpenOriginalImage
 ========================================
-- add to specify the file name format based on https://github.com/furyutei/twOpenOriginalImage (ver.0.1.8.16) ()
+- add to specify the file name format based on https://github.com/furyutei/twOpenOriginalImage (ver.0.1.8.16)
 
 ### user script (Greasemonkey / Tampermonkey）
 > [smallbomb modilfiedー(twOpenOriginalImage.user.js)](https://github.com/smallbomb/twOpenOriginalImage/raw/master/src/js/twOpenOriginalImage.user.js) 
@@ -24,15 +24,19 @@ twOpenOriginalImage
  *    tweet id:
  *      {tweet_id}
  *    tweet text:
- *      {twtext} => first line only if tweet text have new line character('\n').
+ *      {twtext} => first line if tweet text have new line character('\n').
  *    suffix:
  *      {suffix} => '-orig'
  *    extension:
  *      {ext}
  */
-/* example */
+
+/* code example */
 var OPTIONS = {
- FORMATER_FILENAME: '[{yyyy}-{mm}-{dd}]({username}){twtext}_{tweet_id}_{i}.{ext}'
- // => [2021-10-06](Google)Available now_ the new indoor #NestCam (wired) from Google. _1445486492734816268_1.jpg
+ ...
+ ...
+ ...
+, FORMATER_FILENAME: '[{yyyy}-{mm}-{dd}]({username}){twtext}_{tweet_id}_{i}.{ext}' // you can modify it!
+  // => [2021-10-06](Google)Available now_ the new indoor #NestCam (wired) from Google. _1445486492734816268_1.jpg
 }
 
