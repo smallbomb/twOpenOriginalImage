@@ -6,7 +6,7 @@ twOpenOriginalImage
 > [smallbomb modifyー(twOpenOriginalImage.user.js)](https://github.com/smallbomb/twOpenOriginalImage/raw/master/src/js/twOpenOriginalImage.user.js) 
 
 ```js
-/* FORMATER_FILENAME support:
+/* FORMAT_FILENAME support:
  *    filename:
  *      {base}
  *    tweet create date:
@@ -36,7 +36,7 @@ var OPTIONS = {
  ...
  ...
  ...
-, FORMATER_FILENAME: '[{yyyy}-{mm}-{dd}]({username}){twtext}_{tweet_id}_{i}.{ext}' // you can modify it!
+, FORMAT_FILENAME: '[{yyyy}-{mm}-{dd}]({username}){twtext}_{tweet_id}_{i}.{ext}' // you can modify it!
   // => [2021-10-06](Google)Available now_ the new indoor #NestCam (wired) from Google. _1445486492734816268_1.jpg
 }
 
