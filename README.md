@@ -3,7 +3,7 @@ twOpenOriginalImage
 - add to specify the file name format based on https://github.com/furyutei/twOpenOriginalImage (ver.0.1.8.16)
 
 ### user script (Greasemonkey / Tampermonkey）
-> [smallbomb modilfyー(twOpenOriginalImage.user.js)](https://github.com/smallbomb/twOpenOriginalImage/raw/master/src/js/twOpenOriginalImage.user.js) 
+> [smallbomb modifyー(twOpenOriginalImage.user.js)](https://github.com/smallbomb/twOpenOriginalImage/raw/master/src/js/twOpenOriginalImage.user.js) 
 
 ```js
 /* FORMATER_FILENAME support:
