@@ -1910,7 +1910,6 @@ function initialize( user_options ) {
                 header_style.fontSize = '16px';
                 header_style.margin = '0 0 8px';
                 header_style.padding = '6px 8px 2px';
-                header_style.height = '16px';
                 header_style.fontFamily = 'Arial, "ヒラギノ角ゴ Pro W3", "Hiragino Kaku Gothic Pro", Osaka, メイリオ, Meiryo, "ＭＳ Ｐゴシック", "MS PGothic", sans-serif';
                 header_style.lineHeight = '0.8';
                 
