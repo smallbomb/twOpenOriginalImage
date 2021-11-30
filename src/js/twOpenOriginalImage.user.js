@@ -2,7 +2,7 @@
 // @name            twOpenOriginalImage
 // @namespace       http://furyu.hatenablog.com/
 // @author          furyu
-// @version         0.1.8.16
+// @version         0.1.8.17
 // @include         http://twitter.com/*
 // @include         https://twitter.com/*
 // @include         https://mobile.twitter.com/*
@@ -11,6 +11,9 @@
 // @require         https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.4/jszip.min.js
 // @require         https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.3/FileSaver.min.js
 // @grant           GM_xmlhttpRequest
+// @grant           GM_download
+// @connect         twitter.com
+// @connect         twimg.com
 // @description     Open images in original size on Twitter.
 // ==/UserScript==
 
@@ -372,6 +375,7 @@ var is_extension = ( function () {
     };
 } )(); // end of is_extension()
 
+var body_computed_style = getComputedStyle( d.body );
 
 function is_night_mode() {
     if ( is_react_twitter() ) {
@@ -387,9 +391,17 @@ function is_night_mode() {
         //    }
         //}
         */
-        return ( getComputedStyle( d.body ).backgroundColor != 'rgb(255, 255, 255)' );
-        // [2019.08.07] メニューがサイドバーの「ダークモード」から、「もっと見る」＞「表示」＞「背景画像」に変更、種類も3種になった
-        // → document.body の background-color で判定（デフォルト: rgb(255, 255, 255)・ダークブルー: rgb(21, 32, 43)・ブラック: rgb(0, 0, 0)）
+        try {
+            return ( body_computed_style.backgroundColor != 'rgb(255, 255, 255)' );
+            // [2019.08.07] メニューがサイドバーの「ダークモード」から、「もっと見る」＞「表示」＞「背景画像」に変更、種類も3種になった
+            // → document.body の background-color で判定（デフォルト: rgb(255, 255, 255)・ダークブルー: rgb(21, 32, 43)・ブラック: rgb(0, 0, 0)）
+            
+            // TODO: 下記のようなエラーが記録されることがあり、回避方法不明（try~catchにもかからない）→別の拡張機能がフォントを読み込もうとしているためか？（とりあえず保留）
+            //  Refused to load the font 'https://fonts.gstatic.com/s/materialicons/v31/2fcrYFNaTjcS6g4U3t-Y5UEw0lE80llgEseQY3FEmqw.woff2' because it violates the following Content Security Policy directive: "font-src 'self' https://*.twimg.com".
+        }
+        catch ( error ) {
+            return false;
+        }
     }
     else {
         // TweetDeck 用判定
@@ -1258,7 +1270,7 @@ function download_zip( tweet_info_json ) {
                     return;
                 }
                 
-                if ( is_firefox() && ( typeof GM_xmlhttpRequest == 'function' ) ) {
+                if ( typeof GM_xmlhttpRequest == 'function' ) { // [2021/11]メモ: ユーザースクリプトとして動作時、XMLHttpRequestではTweetDeckでダウンロードできなくなったため、is_firefox()の条件をはずす
                     GM_xmlhttpRequest( {
                         method : 'GET'
                     ,   url : img_url
@@ -2589,11 +2601,38 @@ function initialize( user_options ) {
                             //iframe.src = img_url;
                             //target_document.documentElement.appendChild( iframe );
                             */
-                            
-                            fetch( download_link.href )
-                            .then( response => response.blob() )
-                            .then( blob => save_blob( download_link.download, blob ) );
-                            
+                            /*
+                            //if ( typeof GM_download == 'function' ) {
+                            //    // TODO: GM_download() だとダウンロード先フォルダが記憶されない(？)
+                            //    GM_download( {
+                            //        url : download_link.href,
+                            //        name : download_link.download,
+                            //    } );
+                            //}
+                            */
+                            if ( typeof GM_xmlhttpRequest == 'function' ) {
+                                GM_xmlhttpRequest( {
+                                    method : 'GET',
+                                    url : download_link.href,
+                                    responseType : 'blob',
+                                    onload : function ( response ) {
+                                        save_blob( download_link.download, response.response )
+                                    },
+                                    onerror : function ( response ) {
+                                        log_error( 'Download failure:', download_link.href, download_link.download, response.status, response.statusText );
+                                        alert( 'Download failure:\n' + download_link.href );
+                                    }
+                                } );
+                            }
+                            else {
+                                fetch( download_link.href )
+                                .then( response => response.blob() )
+                                .then( blob => save_blob( download_link.download, blob ) )
+                                .catch( error => {
+                                    log_error( 'Download failure:', download_link.href, download_link.download, error );
+                                    alert( 'Download failure:\n' + download_link.href );
+                                });
+                            }
                             return false;
                         } );
                     }
@@ -4469,7 +4508,7 @@ function initialize( user_options ) {
     function set_user_css() {
         var button_selector = '.' + SCRIPT_NAME + 'Button button.btn',
             css_rule_lines = [
-                button_selector + '{padding:2px 6px; font-weight:normal; min-height:16px;}'
+                button_selector + '{padding:2px 6px; font-weight:normal; min-height:16px; white-space:nowrap;}'
             ];
         
         if ( is_tweetdeck() ) {
