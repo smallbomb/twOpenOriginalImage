@@ -1137,6 +1137,11 @@ function save_base64( filename, base64, mimetype ) {
 } // end of save_base64()
 
 
+function get_filename_prefix( tweet_url ) {
+    return tweet_url.replace( /^https?:\/\/(?:mobile\.)?twitter\.com\/([^\/]+)\/status(?:es)?\/(\d+).*$/, '$1-$2' );
+} // end of get_filename_prefix()
+
+
 function download_zip( tweet_info_json ) {
     var tweet_info,
         tweet_url,
@@ -1166,7 +1171,7 @@ function download_zip( tweet_info_json ) {
     }
     
     var zip = new JSZip(),
-        filename_prefix = tweet_url.replace( /^https?:\/\/(?:mobile\.)?twitter\.com\/([^\/]+)\/status(?:es)?\/(\d+).*$/, '$1-$2' );
+        filename_prefix = get_filename_prefix(tweet_url);
     
     timestamp_ms = ( timestamp_ms ) ? timestamp_ms : get_timestamp_ms_from_tweet_url( tweet_url );
     
@@ -2554,7 +2559,7 @@ function initialize( user_options ) {
         } // end of mouse_is_on_scrollbar()
         
         
-        function add_images_to_page( img_urls, parent, options ) {
+        function add_images_to_page( img_urls, tweet_url, parent, options ) {
             if ( ! options ) {
                 options = {};
             }
@@ -2566,7 +2571,8 @@ function initialize( user_options ) {
                 target_document = d;
             }
             
-            var remaining_images_counter = 0;
+            var remaining_images_counter = 0,
+                filename_prefix = get_filename_prefix(tweet_url);
             
             img_urls.forEach( function ( img_url, index ) {
                 var img = import_node( img_template, target_document ),
@@ -2576,7 +2582,9 @@ function initialize( user_options ) {
                 if ( OPTIONS.DOWNLOAD_HELPER_SCRIPT_IS_VALID ) {
                     var download_link = create_download_link( img_url, target_document ),
                         download_link_container = import_node( download_link_container_template, target_document ),
-                        mouse_click = object_extender( MouseClick ).init( download_link );
+                        mouse_click = object_extender( MouseClick ).init( download_link ),
+                        img_extension = get_img_extension( img_url ),
+                        img_filename = filename_prefix + '-img' + ( index + 1 ) + '.' + img_extension;
                     
                     download_link.href = img_url;
                     
@@ -2606,7 +2614,7 @@ function initialize( user_options ) {
                             //    // TODO: GM_download() だとダウンロード先フォルダが記憶されない(？)
                             //    GM_download( {
                             //        url : download_link.href,
-                            //        name : download_link.download,
+                            //        name : img_filename,
                             //    } );
                             //}
                             */
@@ -2616,10 +2624,10 @@ function initialize( user_options ) {
                                     url : download_link.href,
                                     responseType : 'blob',
                                     onload : function ( response ) {
-                                        save_blob( download_link.download, response.response )
+                                        save_blob( img_filename, response.response )
                                     },
                                     onerror : function ( response ) {
-                                        log_error( 'Download failure:', download_link.href, download_link.download, response.status, response.statusText );
+                                        log_error( 'Download failure:', download_link.href, img_filename, response.status, response.statusText );
                                         alert( 'Download failure:\n' + download_link.href );
                                     }
                                 } );
@@ -2627,9 +2635,9 @@ function initialize( user_options ) {
                             else {
                                 fetch( download_link.href )
                                 .then( response => response.blob() )
-                                .then( blob => save_blob( download_link.download, blob ) )
+                                .then( blob => save_blob( img_filename, blob ) )
                                 .catch( error => {
-                                    log_error( 'Download failure:', download_link.href, download_link.download, error );
+                                    log_error( 'Download failure:', download_link.href, img_filename, error );
                                     alert( 'Download failure:\n' + download_link.href );
                                 });
                             }
@@ -2902,7 +2910,7 @@ function initialize( user_options ) {
                 image_overlay_header.style.borderBottom = 'solid 1px silver';
             }
             
-            add_images_to_page( img_urls, image_overlay_image_container, {
+            add_images_to_page( img_urls, tweet_url, image_overlay_image_container, {
                 start_img_url : start_img_url
             ,   callback : function () {
                     if ( image_overlay_container.style.display == 'none' ) {
@@ -3446,7 +3454,7 @@ function initialize( user_options ) {
                     body.appendChild( header );
                 }
                 
-                add_images_to_page( img_urls, body, { document : child_document } );
+                add_images_to_page( img_urls, tweet_url, body, { document : child_document } );
                 
                 child_window.focus();
                 
