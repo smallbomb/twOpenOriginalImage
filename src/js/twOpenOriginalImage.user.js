@@ -9,10 +9,14 @@
 // @include         https://mobile.twitter.com/*
 // @include         https://pbs.twimg.com/media/*
 // @include         https://tweetdeck.twitter.com/*
-// @require         https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.4/jszip.min.js
-// @require         https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.3/FileSaver.min.js
+// @grant           GM_getValue
+// @grant           GM_setValue
+// @grant           GM_registerMenuCommand
 // @grant           GM_xmlhttpRequest
 // @grant           GM_download
+// @require         https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.4/jszip.min.js
+// @require         https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.3/FileSaver.min.js
+// @require         https://openuserjs.org/src/libs/sizzle/GM_config.js
 // @connect         twitter.com
 // @connect         twimg.com
 // @description     Open images in original size on Twitter.
@@ -102,6 +106,164 @@ if ( IS_TOUCHED ) {
 if ( /^https:\/\/twitter\.com\/i\/cards/.test( w.location.href ) ) {
     // https://twitter.com/i/cards/～ では実行しない
     return;
+}
+
+if ( typeof GM_config != 'undefined' ) {
+    GM_config.init({
+        id: 'twOpenOriginalImage',
+        fields: {
+            SHOW_IN_DETAIL_PAGE: {
+                label: 'SHOW_IN_DETAIL_PAGE',
+                type: 'checkbox',
+                title: '詳細ページで動作',
+                default: true,
+                section: 'Section 1'
+            },
+            SHOW_IN_TIMELINE: {
+                label: 'SHOW_IN_TIMELINE',
+                type: 'checkbox',
+                title: 'タイムラインで動作',
+                default: true
+            },
+            ENABLED_ON_TWEETDECK: {
+                label: 'ENABLED_ON_TWEETDECK',
+                type: 'checkbox',
+                title: 'TweetDeck 上で有効',
+                default: true
+            },
+            DISPLAY_ALL_IN_ONE_PAGE: {
+                label: 'DISPLAY_ALL_IN_ONE_PAGE',
+                type: 'checkbox',
+                title: 'true: [Click] 全ての画像を同一ページで開く / [Alt]+[Click] 画像を個別に開く、false: 左記の逆の動作',
+                default: true
+            },
+            DISPLAY_OVERLAY: {
+                label: 'DISPLAY_OVERLAY',
+                type: 'checkbox',
+                title: '全ての画像を同一ページで開く際に(別タブで開かず)タイムライン上にオーバーレイする',
+                default: true
+            },
+            OVERRIDE_CLICK_EVENT: {
+                label: 'OVERRIDE_CLICK_EVENT',
+                type: 'checkbox',
+                title: 'ツイート中の画像クリックで原寸画像を開く',
+                default: true
+            },
+            DISPLAY_ORIGINAL_BUTTONS: {
+                label: 'DISPLAY_ORIGINAL_BUTTONS',
+                type: 'checkbox',
+                title: '[原寸画像]ボタンを表示',
+                default: true
+            },
+            OVERRIDE_GALLERY_FOR_TWEETDECK: {
+                label: 'OVERRIDE_GALLERY_FOR_TWEETDECK',
+                type: 'checkbox',
+                title: 'TweetDeck のギャラリー(画像サムネイルクリック時のポップアップ)を置換(OVERRIDE_CLICK_EVENT true 時のみ有効)',
+                default: true
+            },
+            DOWNLOAD_HELPER_SCRIPT_IS_VALID: {
+                label: 'DOWNLOAD_HELPER_SCRIPT_IS_VALID',
+                type: 'checkbox',
+                title: 'ダウンロードヘルパー機能有効',
+                default: true
+            },
+            DOWNLOAD_ZIP_IS_VALID: {
+                label: 'DOWNLOAD_ZIP_IS_VALID',
+                type: 'checkbox',
+                title: 'ZIPダウンロード有効',
+                default: true
+            },
+            SWAP_IMAGE_URL: {
+                label: 'SWAP_IMAGE_URL',
+                type: 'checkbox',
+                title: 'タイムラインの画像を orig 画像と差し替え',
+                default: false
+            },
+            HIDE_DOWNLOAD_BUTTON_AUTOMATICALLY: {
+                label: 'HIDE_DOWNLOAD_BUTTON_AUTOMATICALLY',
+                type: 'checkbox',
+                title: 'ダウンロードボタンを自動的に隠す(オーバーレイ表示時)',
+                default: true
+            },
+            SUPPRESS_FILENAME_SUFFIX: {
+                label: 'SUPPRESS_FILENAME_SUFFIX',
+                type: 'checkbox',
+                title: 'ファイル名の接尾辞(-orig等)抑制',
+                default: false
+            },
+            SHOW_IMAGES_OF_QUOTE_TWEET: {
+                label: 'SHOW_IMAGES_OF_QUOTE_TWEET',
+                type: 'checkbox',
+                title: '引用ツイート中の画像も対象とする',
+                default: true
+            },
+            OPERATION: {
+                label: 'OPERATION',
+                type: 'checkbox',
+                title: 'true: 動作中、false: 停止中',
+                default: true,
+                section: 'Section 2'
+            },
+            WAIT_AFTER_OPENPAGE: {
+                label: 'WAIT_AFTER_OPENPAGE',
+                type: 'int',
+                title: 'Firefox でページを開いた後、画像を挿入するまでのタイムラグ(ms)',
+                default: 500,
+                section: 'Section 3'
+            },
+            KEYCODE_DISPLAY_IMAGES: {
+                label: 'KEYCODE_DISPLAY_IMAGES',
+                type: 'int',
+                title: '画像を開くときのキーコード(keydown用)(86=[v])',
+                default: 86
+            },
+            KEYCODE_CLOSE_OVERLAY: {
+                label: 'KEYCODE_CLOSE_OVERLAY',
+                type: 'int',
+                title: '画像を閉じるときのキー(keydown用)(27=[Esc])(※オーバーレイ時のみ)',
+                default: 27
+            },
+            HELP_KEYCHAR_DISPLAY_IMAGES: {
+                label: 'HELP_KEYCHAR_DISPLAY_IMAGES',
+                type: 'text',
+                default: 'v'
+            },
+            SCROLL_STEP: {
+                label: 'SCROLL_STEP',
+                type: 'int',
+                title: 'オーバーレイ表示時の[↑][↓]によるスクロール単位(pixel)',
+                default: 100
+            },
+            SMOOTH_SCROLL_STEP: {
+                label: 'SMOOTH_SCROLL_STEP',
+                type: 'int',
+                title: 'オーバーレイ表示時のスムーズスクロール単位(pixel)',
+                default: 100
+            },
+            SMOOTH_SCROLL_INTERVAL: {
+                label: 'SMOOTH_SCROLL_INTERVAL',
+                type: 'int',
+                title: 'オーバーレイ表示時のスムーズスクロールの間隔(ms)',
+                default: 10
+            },
+            DEFAULT_IMAGE_SIZE: {
+                label: 'DEFAULT_IMAGE_SIZE',
+                type: 'radio',
+                options: ['full', 'fit-width', 'fit-height', 'fit-window'],
+                title: "オーバーレイ表示時の画像幅初期値 ( 'full' / 'fit-width' / 'fit-height' / 'fit-window' )",
+                default: 'fit-window'
+            },
+            DEFAULT_IMAGE_BACKGROUND_COLOR: {
+                label: 'DEFAULT_IMAGE_BACKGROUND_COLOR',
+                type: 'radio',
+                options: ['black', 'white'],
+                title: "オーバーレイ表示時の画像背景色初期値 ('black' または 'white')",
+                default: 'black'
+            },
+        }
+    })
+    
+    GM_registerMenuCommand('Settings', () => GM_config.open())
 }
 
 // ■ パラメータ
@@ -1773,7 +1935,7 @@ function initialize( user_options ) {
                 header_style.fontSize = '16px';
                 header_style.margin = '0 0 8px';
                 header_style.padding = '6px 8px 2px';
-                header_style.height = '16px';
+                //header_style.height = '16px';
                 header_style.fontFamily = 'Arial, "ヒラギノ角ゴ Pro W3", "Hiragino Kaku Gothic Pro", Osaka, メイリオ, Meiryo, "ＭＳ Ｐゴシック", "MS PGothic", sans-serif';
                 header_style.lineHeight = '0.8';
                 

@@ -26,6 +26,8 @@ module.exports = {
         "GM_getValue": "readonly",
         "GM_deleteValue": "readonly",
         "GM_download": "readonly",
+        "GM_config": "readonly",
+        "GM_registerMenuCommand": "readonly",
         "OAuth": "readonly",
         "Twitter": "readonly",
         "ZipRequest": "readonly",
