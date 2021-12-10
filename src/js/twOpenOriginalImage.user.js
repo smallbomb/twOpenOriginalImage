@@ -1,8 +1,9 @@
 // ==UserScript==
 // @name            twOpenOriginalImage
+// @name:ja         Twitter 原寸びゅー
 // @namespace       http://furyu.hatenablog.com/
 // @author          furyu
-// @version         0.1.8.17
+// @version         0.1.8.18
 // @include         http://twitter.com/*
 // @include         https://twitter.com/*
 // @include         https://mobile.twitter.com/*
@@ -15,6 +16,9 @@
 // @connect         twitter.com
 // @connect         twimg.com
 // @description     Open images in original size on Twitter.
+// @description:ja  Web版Twitter・TweetDeckで、原寸画像の表示と保存が簡単にできるようになります。
+// @supportURL      https://github.com/furyutei/twOpenOriginalImage/issues
+// @contributionURL https://memo.furyutei.work/about#send_donation
 // ==/UserScript==
 
 /*
@@ -116,6 +120,7 @@ var OPTIONS = {
 ,   HIDE_DOWNLOAD_BUTTON_AUTOMATICALLY : true // true: ダウンロードボタンを自動的に隠す(オーバーレイ表示時)
 ,   SUPPRESS_FILENAME_SUFFIX : false // true : ファイル名の接尾辞(-orig等)抑制
 ,   SHOW_IMAGES_OF_QUOTE_TWEET : true // true : 引用ツイート中の画像も対象とする
+,   SAME_FILENAME_AS_IN_ZIP : true // true : 個別ダウンロード時のファイル名をZIPのものと揃える
 
 ,   OPERATION : true // true: 動作中、false: 停止中
 
@@ -659,6 +664,7 @@ function remove_event() {
 
 
 function get_url_info( url ) {
+    // [注意] url は https?:// 以外（画像ファイル名など）の場合あり（※その場合はnew URL(url)とするとエラー発生）
     var url_parts = url.split( '?' ),
         query_map = {},
         url_info = { base_url : url_parts[ 0 ], query_map : query_map };
@@ -2572,7 +2578,7 @@ function initialize( user_options ) {
             }
             
             var remaining_images_counter = 0,
-                filename_prefix = get_filename_prefix(tweet_url);
+                filename_prefix = get_filename_prefix( tweet_url );
             
             img_urls.forEach( function ( img_url, index ) {
                 var img = import_node( img_template, target_document ),
@@ -2583,8 +2589,7 @@ function initialize( user_options ) {
                     var download_link = create_download_link( img_url, target_document ),
                         download_link_container = import_node( download_link_container_template, target_document ),
                         mouse_click = object_extender( MouseClick ).init( download_link ),
-                        img_extension = get_img_extension( img_url ),
-                        img_filename = filename_prefix + '-img' + ( index + 1 ) + '.' + img_extension;
+                        img_filename = ( OPTIONS.SAME_FILENAME_AS_IN_ZIP ) ? ( filename_prefix + '-img' + ( index + 1 ) + '.' + get_img_extension( img_url ) ) : download_link.download;
                     
                     download_link.href = img_url;
                     
@@ -2699,7 +2704,9 @@ function initialize( user_options ) {
                     check_loaded_image( event );
                 });
                 
-                img.src = link.href = img_url;
+                //img.src = link.href = img_url;
+                img.src = img_url;
+                link.href = ( tweet_url ) ? ( tweet_url + '/photo/' + ( index + 1 ) ) : img_url;
                 
                 link.className = 'image-link';
                 link.appendChild( img );
@@ -3720,12 +3727,14 @@ function initialize( user_options ) {
                 event.stopPropagation();
                 
                 var focused_img_url = button.getAttribute( 'data-target-img-url' ),
+                    alt_key_pushed = event.altKey || ( button.getAttribute( 'data-event-alt-key' ) == 'yes' ),
                     target_img_urls = img_urls.slice( 0 ),
                     target_all_img_urls = all_img_urls.slice( 0 );
                 
                 button.removeAttribute( 'data-target-img-url' );
+                button.removeAttribute( 'data-event-alt-key' );
                 
-                if ( OPTIONS.DISPLAY_ALL_IN_ONE_PAGE ^ event.altKey ) {
+                if ( OPTIONS.DISPLAY_ALL_IN_ONE_PAGE ^ alt_key_pushed ) {
                     var tweet_link,
                         tweet_url,
                         tweet_text,
@@ -3871,7 +3880,7 @@ function initialize( user_options ) {
                                 return;
                             }
                             
-                            if ( event.altKey || event.ctrlKey ) {
+                            if ( ( event.shiftKey && event.altKey ) || event.ctrlKey ) {
                                 // [Alt] / [option] キー押下時には、デフォルト動作を実施
                                 lock_event = true;
                                 event.preventDefault();
@@ -3881,6 +3890,8 @@ function initialize( user_options ) {
                             
                             event.stopPropagation();
                             event.preventDefault();
+                            
+                            button.setAttribute( 'data-event-alt-key', event.altKey ? 'yes' : 'no' );
                             
                             if ( img.src ) {
                                 button.setAttribute( 'data-target-img-url', get_img_url_orig( img.src ) );
@@ -4265,9 +4276,18 @@ function initialize( user_options ) {
                 
                 if ( ! target_tweet ) {
                     //target_tweet = region.querySelector( 'article[role="article"] [data-testid="tweet"]' );
-                    target_tweet = region.querySelector( 'article[role="article"][data-testid="tweet"], article[role="article"] [data-testid="tweet"]' );
+                    target_tweet = region.querySelector( '[data-focusvisible-polyfill="true"]' );
+                    if ( ! target_tweet ) {
+                        var tweet_id = get_tweet_id_from_tweet_url( location.href );
+                        if ( tweet_id ) {
+                            target_tweet = region.querySelector( 'a[role="link"][href$="' + tweet_id + '"]' );
+                        }
+                        if ( ! target_tweet ) {
+                            target_tweet = region.querySelector( 'article[role="article"][data-testid="tweet"], article[role="article"] [data-testid="tweet"]' );
+                        }
+                    }
                     if ( target_tweet ) {
-                        target_tweet = search_ancestor_by_attribute( target_tweet, 'role', 'article' );
+                        target_tweet = search_ancestor_by_attribute( target_tweet, 'role', 'article', true );
                     }
                 }
                 button = get_button( target_tweet );
@@ -4295,6 +4315,7 @@ function initialize( user_options ) {
         event.stopPropagation();
         event.preventDefault();
         
+        button.setAttribute( 'data-event-alt-key', event.altKey ? 'yes' : 'no' );
         button.click();
         
         return false;

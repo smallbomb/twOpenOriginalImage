@@ -97,6 +97,7 @@ var twOpenOriginalImage_chrome_init = ( function() {
         ,   HIDE_DOWNLOAD_BUTTON_AUTOMATICALLY : get_bool
         ,   SUPPRESS_FILENAME_SUFFIX : get_bool
         ,   TAB_SORTING : get_bool
+        ,   SAME_FILENAME_AS_IN_ZIP : get_bool
         ,   OPERATION : get_bool
         ,   WAIT_AFTER_OPENPAGE : get_int
         ,   TITLE_PREFIX : get_text

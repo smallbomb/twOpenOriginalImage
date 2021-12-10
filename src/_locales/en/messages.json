@@ -80,6 +80,9 @@
 ,   "SUPPRESS_FILENAME_SUFFIX" : {
         "message" : "Suppress suffix (e.g. -orig) of filename"
     }
+,   "SAME_FILENAME_AS_IN_ZIP" : {
+        "message" : "Use same filename as in ZIP file when downloading alone"
+    }
 ,   "TAB_SORTING" : {
         "message" : "Tab sorting"
     }

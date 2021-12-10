@@ -13,6 +13,7 @@ var DEBUG = false,
     CONTEXT_MENU_IS_VISIBLE = true,
     CONTEXT_MENU_IS_SUSPENDED = false,
     SUPPRESS_FILENAME_SUFFIX = false,
+    SAME_FILENAME_AS_IN_ZIP = true,
     
     DOWNLOAD_MENU_ID = 'download_image',
     
@@ -119,6 +120,7 @@ function update_context_menu_flags() {
     log_debug( 'CONTEXT_MENU_IS_VISIBLE:', CONTEXT_MENU_IS_VISIBLE, 'CONTEXT_MENU_IS_SUSPENDED:', CONTEXT_MENU_IS_SUSPENDED );
     
     SUPPRESS_FILENAME_SUFFIX = ( get_bool( localStorage[ 'SUPPRESS_FILENAME_SUFFIX' ] ) === true ) ? true : false;
+    SAME_FILENAME_AS_IN_ZIP = ( get_bool( localStorage[ 'SAME_FILENAME_AS_IN_ZIP' ] ) !== false ) ? true : false;
 } // end of update_context_menu_flags()
 
 
@@ -171,7 +173,7 @@ function get_formatted_img_url( normalized_img_url ) {
 } // end of get_formatted_img_url()
 
 
-function get_filename_from_image_url( img_url ) {
+function get_filename_from_image_url( img_url, link_url ) {
     if ( ! /:\w*$/.test( img_url ) ) {
         return null;
     }
@@ -184,6 +186,12 @@ function get_filename_from_image_url( img_url ) {
         ext = RegExp.$2,
         suffix = RegExp.$3;
     
+    if ( SAME_FILENAME_AS_IN_ZIP && link_url ) {
+        var base_from_link_url = link_url.replace( /^https?:\/\/(?:mobile\.)?twitter\.com\/([^\/]+)\/status(?:es)?\/(\d+)\/photo\/(\d+).*$/, '$1-$2-img$3' );
+        if ( base_from_link_url != link_url ) {
+            return base_from_link_url + '.' + ext;
+        }
+    }
     if ( SUPPRESS_FILENAME_SUFFIX ) {
         return base + '.' + ext;
     }
@@ -301,16 +309,14 @@ w.reload_tabs = reload_tabs;
 
 function download_image( info, tab ) {
     var img_url = info.srcUrl,
+        link_url = info.linkUrl,
         frame_id = info.frameId,
         page_url = info.frameUrl || info.pageUrl;
     
     img_url = normalize_img_url( img_url );
     
     var img_url_orig = img_url.replace( /:\w*$/, '' ) + ':orig',
-        // filename = get_filename_from_image_url( img_url_orig );
-        extension = get_extension_from_image_url( img_url_orig ),
-        filename = info.linkUrl.replace( /^https?:\/\/(?:mobile\.)?twitter\.com\/([^\/]+)\/status(?:es)?\/(\d+)\/photo\/(\d+).*$/, '$1-$2-img$3' ),
-        filename = filename + '.' + extension;
+        filename = get_filename_from_image_url( img_url_orig, link_url );
     
     img_url_orig = get_formatted_img_url( img_url_orig );
     

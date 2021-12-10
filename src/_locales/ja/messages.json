@@ -80,6 +80,9 @@
 ,   "SUPPRESS_FILENAME_SUFFIX" : {
         "message" : "ファイル名の接尾辞(-orig等)抑制"
     }
+,   "SAME_FILENAME_AS_IN_ZIP" : {
+        "message" : "個別ダウンロード時のファイル名をZIP中のものと揃える"
+    }
 ,   "TAB_SORTING" : {
         "message" : "タブ並び替え"
     }
