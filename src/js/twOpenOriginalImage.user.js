@@ -3,22 +3,28 @@
 // @name:ja         Twitter 原寸びゅー
 // @namespace       http://furyu.hatenablog.com/
 // @author          furyu
-// @version         0.1.8.18
+// @version         0.1.8.19
 // @include         http://twitter.com/*
 // @include         https://twitter.com/*
 // @include         https://mobile.twitter.com/*
 // @include         https://pbs.twimg.com/media/*
 // @include         https://tweetdeck.twitter.com/*
-// @require         https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.4/jszip.min.js
-// @require         https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.3/FileSaver.min.js
+// @grant           GM_getValue
+// @grant           GM_setValue
+// @grant           GM_registerMenuCommand
 // @grant           GM_xmlhttpRequest
 // @grant           GM_download
+// @require         https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.4/jszip.min.js
+// @require         https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.3/FileSaver.min.js
+// @require         https://cdn.jsdelivr.net/gh/sizzlemctwizzle/GM_config@43fd0fe4de1166f343883511e53546e87840aeaf/gm_config.js
 // @connect         twitter.com
 // @connect         twimg.com
+// @connect         furyutei.github.io
 // @description     Open images in original size on Twitter.
 // @description:ja  Web版Twitter・TweetDeckで、原寸画像の表示と保存が簡単にできるようになります。
+// @homepageURL     https://github.com/furyutei/twOpenOriginalImage/
 // @supportURL      https://github.com/furyutei/twOpenOriginalImage/issues
-// @contributionURL https://memo.furyutei.work/about#send_donation
+// @contributionURL https://memo.furyutei.com/about#send_donation
 // ==/UserScript==
 
 /*
@@ -43,6 +49,14 @@
     Copyright © 2015 Eli Grey.
     The MIT License
     [FileSaver.js/LICENSE.md](https://github.com/eligrey/FileSaver.js/blob/master/LICENSE.md)
+
+
+- [sizzlemctwizzle/GM_config: A lightweight, reusable, cross-browser graphical settings framework for inclusion in user scripts.](https://github.com/sizzlemctwizzle/GM_config)
+    [GNU Lesser General Public License v3.0](https://github.com/sizzlemctwizzle/GM_config/blob/master/LICENSE)
+    - [About | GM_config | Libraries | OpenUserJS](https://openuserjs.org/libs/sizzle/GM_config)
+      - https://openuserjs.org/src/libs/sizzle/GM_config.min.js
+    - [sizzlemctwizzle/GM_config CDN by jsDelivr - A CDN for npm and GitHub](https://www.jsdelivr.com/package/gh/sizzlemctwizzle/GM_config)
+      - https://cdn.jsdelivr.net/gh/sizzlemctwizzle/GM_config@43fd0fe4de1166f343883511e53546e87840aeaf/gm_config.js
 */
 
 /*
@@ -103,6 +117,7 @@ if ( /^https:\/\/twitter\.com\/i\/cards/.test( w.location.href ) ) {
     // https://twitter.com/i/cards/～ では実行しない
     return;
 }
+
 
 // ■ パラメータ
 var OPTIONS = {
@@ -177,7 +192,9 @@ var DEBUG = false,
         }
         
         return lang;
-    } )();
+    } )(),
+    
+    FONT_FAMILY = 'Arial, "ヒラギノ角ゴ Pro W3", "Hiragino Kaku Gothic Pro", Osaka, メイリオ, Meiryo, "ＭＳ Ｐゴシック", "MS PGothic", sans-serif';
 
 switch ( LANGUAGE ) {
     case 'ja' :
@@ -202,7 +219,7 @@ switch ( LANGUAGE ) {
         OPTIONS.HELP_OVERLAY_SHORTCUT_BGCOLOR_BLACK = '黒';
         OPTIONS.HELP_OVERLAY_SHORTCUT_BGCOLOR_WHITE = '白';
         break;
-    default:
+    default :
         OPTIONS.TITLE_PREFIX = 'IMG: ';
         OPTIONS.TWEET_LINK_TEXT = 'Tweet';
         OPTIONS.CLOSE_TEXT = 'Close [Esc]';
@@ -1442,7 +1459,7 @@ function initialize_download_helper() {
     link_container_style.width = '100%';
     //link_container_style.margin = '2px 0 1px 0';
     link_container_style.margin = '0 0 0 0';
-    link_container_style.fontFamily = 'Arial, "ヒラギノ角ゴ Pro W3", "Hiragino Kaku Gothic Pro", Osaka, メイリオ, Meiryo, "ＭＳ Ｐゴシック", "MS PGothic", sans-serif';
+    link_container_style.fontFamily = FONT_FAMILY;
     link_container_style.padding = '2px 4px';
     link_container_style.opacity = '1.0';
     link_container_style.background = 'lightyellow';
@@ -1773,8 +1790,8 @@ function initialize( user_options ) {
                 header_style.fontSize = '16px';
                 header_style.margin = '0 0 8px';
                 header_style.padding = '6px 8px 2px';
-                header_style.height = '16px';
-                header_style.fontFamily = 'Arial, "ヒラギノ角ゴ Pro W3", "Hiragino Kaku Gothic Pro", Osaka, メイリオ, Meiryo, "ＭＳ Ｐゴシック", "MS PGothic", sans-serif';
+                //header_style.height = '16px';
+                header_style.fontFamily = FONT_FAMILY;
                 header_style.lineHeight = '0.8';
                 
                 return header_template;
@@ -4592,11 +4609,431 @@ function initialize( user_options ) {
 } // end of initialize()
 
 
+function gm_xhr_promise( details ) {
+    if ( ! details ) {
+        details = {};
+    }
+    
+    details = Object.assign( {
+        method : 'GET',
+        timeout : 10000,
+        responseType : 'json',
+    }, details );
+    
+    return new Promise( ( resolve, reject ) => {
+        Object.assign( details, {
+            onload : resolve,
+            onerror : reject,
+            ontimeout : reject,
+        } );
+        GM_xmlhttpRequest(details);
+    } );
+} // end of gm_xhr_promise();
+
+
+async function init_gm_menu() {
+    var user_options = Object.create( null ),
+        language = ( () => {
+            return [ 'ja', 'en' ].includes( LANGUAGE ) ? LANGUAGE : 'en';
+        } )(),
+        messages = await gm_xhr_promise( {
+            url : 'https://furyutei.github.io/twOpenOriginalImage/src/_locales/' + language + '/messages.json',
+        } )
+        .then( response => {
+            var message_map =  response.response;
+            
+            return Object.keys( message_map ).reduce( ( messages, key ) => {
+                messages[ key ] = message_map[ key ].message;
+                return messages;
+            }, {} );
+        } )
+        .catch( error => {
+            return null;
+        } );
+    
+    if ( messages === null ) {
+        return user_options;
+    }
+    
+    var config_id = `${SCRIPT_NAME}Config`,
+        open_value_map,
+        saved_value_map,
+        
+        get_config_value_map = ( getLive = false ) => Object.keys( GM_config.fields ).reduce( ( value_map, field_id ) => {
+            if ( GM_config.fields[ field_id ].save === false ) {
+                return value_map;
+            }
+            value_map[ field_id ] = GM_config.get( field_id, getLive );
+            return value_map;
+        }, Object.create( null ) ),
+        
+        get_diff_values = ( value_map1, value_map2 ) => {
+            if ( ! value_map1 ) {
+                value_map1 = Object.create( null );
+            }
+            if ( ! value_map2 ) {
+                value_map2 = Object.create( null );
+            }
+            return Object.keys( GM_config.fields ).reduce( ( values, field_id ) => {
+                if ( GM_config.fields[ field_id ].save === false ) {
+                    return values;
+                }
+                var value1 = value_map1[ field_id ],
+                    value2 = value_map2[ field_id ];
+                
+                if ( value1 !== value2 ) {
+                    values.push( {
+                        field_id,
+                        value1,
+                        value2,
+                    } );
+                }
+                return values;
+            }, [] );
+        },
+        
+        update_save_status = () => {
+            var save_status = ( GM_config.frame.contentDocument || GM_config.frame.ownerDocument ).querySelector( `#${config_id}_save-status` ),
+                current_value_map = get_config_value_map( true );
+            
+            if ( 0 < get_diff_values( saved_value_map, current_value_map ).length ) {
+                save_status.textContent = messages.NOT_SAVED;
+                save_status.classList.add( 'warning' );
+            }
+            else {
+                save_status.textContent = '';
+                save_status.classList.remove( 'warning' );
+            }
+        };
+    
+    switch ( language ) {
+        case 'ja' :
+            Object.assign( messages, {
+                SETTINGS : '設定',
+                CONTROL : '制御',
+                SAVE : '保存',
+                CLOSE : '閉じる',
+                SET_DEFAULT : 'デフォルトに戻す',
+                OPERATION : `${messages.ext_title}稼働`,
+                NOT_SAVED : '未保存',
+            } );
+            break;
+        
+        default :
+            Object.assign( messages, {
+                SETTINGS : 'Settings',
+                CONTROL : 'Control',
+                SAVE : 'Save',
+                CLOSE : 'Close',
+                SET_DEFAULT : 'Reset to defaults',
+                OPERATION : `Running ${messages.ext_title}`,
+                NOT_SAVED : 'Not saved',
+            } );
+            break;
+    }
+    
+    GM_config.init( {
+        id : config_id,
+        title : `${messages.ext_title} version ${GM_info.script.version}`,
+        fields : {
+            DEFAULT_ACTION_ON_CLICK_EVENT : {
+                label : messages.DEFAULT_ACTION_ON_CLICK_EVENT,
+                type : 'radio',
+                options : [
+                    messages.DISPLAY_ALL_IN_ONE_PAGE_DESCRIPTION,
+                    messages.DISPLAY_ONE_PER_PAGE_DESCRIPTION,
+                ],
+                default : messages.DISPLAY_ALL_IN_ONE_PAGE_DESCRIPTION,
+                save : false,
+                section : messages.SETTINGS,
+            },
+            
+            DISPLAY_ALL_IN_ONE_PAGE : {
+                type : 'checkbox',
+                default : OPTIONS.DISPLAY_ALL_IN_ONE_PAGE,
+            },
+            
+            DISPLAY_OVERLAY : {
+                label : messages.DISPLAY_OVERLAY,
+                type : 'checkbox',
+                default : OPTIONS.DISPLAY_OVERLAY,
+            },
+            
+            OVERRIDE_CLICK_EVENT : {
+                label : messages.OVERRIDE_CLICK_EVENT,
+                type : 'checkbox',
+                default : OPTIONS.OVERRIDE_CLICK_EVENT,
+            },
+            
+            SWAP_IMAGE_URL : {
+                label : messages.SWAP_IMAGE_URL,
+                type : 'checkbox',
+                default : OPTIONS.SWAP_IMAGE_URL,
+            },
+            
+            DISPLAY_ORIGINAL_BUTTONS : {
+                label : messages.DISPLAY_ORIGINAL_BUTTONS,
+                type : 'checkbox',
+                default : OPTIONS.DISPLAY_ORIGINAL_BUTTONS,
+            },
+            
+            BUTTON_TEXT : {
+                label : messages.BUTTON_TEXT_HEADER,
+                type : 'text',
+                default : OPTIONS.BUTTON_TEXT,
+            },
+            
+            ENABLED_ON_TWEETDECK : {
+                label : messages.ENABLED_ON_TWEETDECK,
+                type : 'checkbox',
+                default : OPTIONS.ENABLED_ON_TWEETDECK,
+            },
+            
+            OVERRIDE_GALLERY_FOR_TWEETDECK : {
+                label : messages.OVERRIDE_GALLERY_FOR_TWEETDECK,
+                type : 'checkbox',
+                default : OPTIONS.OVERRIDE_GALLERY_FOR_TWEETDECK,
+            },
+            
+            DOWNLOAD_HELPER_SCRIPT_IS_VALID : {
+                label : messages.DOWNLOAD_HELPER_IS_VALID_HEADER,
+                type : 'checkbox',
+                default : OPTIONS.DOWNLOAD_HELPER_SCRIPT_IS_VALID,
+            },
+            
+            HIDE_DOWNLOAD_BUTTON_AUTOMATICALLY : {
+                label : messages.HIDE_DOWNLOAD_BUTTON_AUTOMATICALLY,
+                type : 'checkbox',
+                default : OPTIONS.HIDE_DOWNLOAD_BUTTON_AUTOMATICALLY,
+            },
+            
+            SAME_FILENAME_AS_IN_ZIP : {
+                label : messages.SAME_FILENAME_AS_IN_ZIP,
+                type : 'checkbox',
+                default : OPTIONS.SAME_FILENAME_AS_IN_ZIP,
+            },
+            
+            SUPPRESS_FILENAME_SUFFIX : {
+                label : messages.SUPPRESS_FILENAME_SUFFIX,
+                type : 'checkbox',
+                default : OPTIONS.SUPPRESS_FILENAME_SUFFIX,
+            },
+            
+            OPERATION : {
+                label : messages.OPERATION,
+                type : 'checkbox',
+                default : OPTIONS.OPERATION,
+                section : messages.CONTROL,
+            },
+        },
+        events : {
+            init : function () {
+                GM_config.set( 'DEFAULT_ACTION_ON_CLICK_EVENT', GM_config.get( 'DISPLAY_ALL_IN_ONE_PAGE' ) ? messages.DISPLAY_ALL_IN_ONE_PAGE_DESCRIPTION : messages.DISPLAY_ONE_PER_PAGE_DESCRIPTION );
+            },
+            
+            open : function ( frame_doc, frame_win, frame ) {
+                saved_value_map = open_value_map = get_config_value_map();
+                
+                frame.style.border = 'none';
+                frame.style.zIndex = 99999;
+                
+                GM_config.fields[ 'DEFAULT_ACTION_ON_CLICK_EVENT' ].node.addEventListener( 'change', event => {
+                    GM_config.set( 'DISPLAY_ALL_IN_ONE_PAGE', GM_config.get( 'DEFAULT_ACTION_ON_CLICK_EVENT', true ) == messages.DISPLAY_ALL_IN_ONE_PAGE_DESCRIPTION );
+                }, false );
+                
+                if ( is_firefox() ) {
+                    GM_config.fields[ 'DISPLAY_OVERLAY' ].node.setAttribute( 'disabled', 'disabled' );
+                }
+                
+                var config_header = frame_doc.querySelector( `#${config_id}_header` ),
+                    header_link = frame_doc.createElement( 'a' ),
+                    donation_link = frame_doc.createElement( 'a' );
+                
+                header_link.id = `${config_id}_header-title-link`;
+                header_link.textContent = config_header.textContent;
+                header_link.target = '_blank';
+                header_link.href = GM_info.script.homepage;
+                
+                donation_link.textContent = messages.DOMATION;
+                donation_link.id = `${config_id}_header-donation-link`;
+                donation_link.target = '_blank';
+                donation_link.href = 'https://memo.furyutei.com/about#send_donation';
+                
+                //config_header.classList.remove( 'center' );
+                config_header.textContent = '';
+                config_header.appendChild( header_link );
+                config_header.appendChild( donation_link );
+                
+                var save_button = frame_doc.querySelector( `#${config_id}_saveBtn` ),
+                    close_button = frame_doc.querySelector( `#${config_id}_closeBtn` ),
+                    reset_link = frame_doc.querySelector( `#${config_id}_resetLink` ),
+                    save_status = frame_doc.createElement( 'span' );
+                
+                save_status.id = `${config_id}_save-status`;
+                save_status.textContent = '';
+                
+                save_button.parentNode.insertBefore( save_status, save_button );
+                save_button.textContent = messages.SAVE;
+                close_button.textContent = messages.CLOSE;
+                reset_link.textContent = messages.SET_DEFAULT;
+                
+                [ ... frame_doc.querySelectorAll( '.section_header' ) ].map( section_header => section_header.classList.remove( 'center' ) );
+                
+                [ ... frame_doc.querySelectorAll( 'input[type="radio"]' ) ].map( radio_element => {
+                    var next_element = radio_element.nextElementSibling;
+                    if ( next_element && next_element.tagName == 'LABEL' ) {
+                        next_element.insertBefore( radio_element, next_element.firstChild );
+                    }
+                } );
+                
+                frame_doc.addEventListener( 'keydown', event => {
+                    switch ( event.keyCode ) {
+                        case 83 : { // [s]
+                            if ( ! event.ctrlKey ) {
+                                return;
+                            }
+                            GM_config.save();
+                            break;
+                        }
+                        case 27 : {// [Esc]
+                            GM_config.close();
+                            break;
+                        }
+                        default : {
+                            return;
+                        }
+                    }
+                    event.stopPropagation();
+                    event.preventDefault();
+                } );
+                
+                frame_doc.querySelector( `#${config_id}_wrapper` ).addEventListener( 'change', event => {
+                    update_save_status();
+                }, false );
+            },
+            
+            reset : function () {
+                GM_config.set( 'DISPLAY_ALL_IN_ONE_PAGE', GM_config.get( 'DEFAULT_ACTION_ON_CLICK_EVENT', true ) == messages.DISPLAY_ALL_IN_ONE_PAGE_DESCRIPTION );
+                update_save_status();
+            },
+            
+            save : function ( forgotton ) {
+                saved_value_map = get_config_value_map();
+                update_save_status();
+            },
+            
+            close : function () {
+                var current_value_map = get_config_value_map();
+                if ( 0 < get_diff_values( open_value_map, current_value_map ).length ) {
+                    window.location.reload();
+                }
+            },
+        },
+        css : `
+            #${config_id} {
+                font-family: ${FONT_FAMILY};
+                background-color: transparent;
+            }
+            
+            #${config_id}_wrapper {
+                width: 75%;
+                min-width: 700px;
+                margin: auto;
+                background-color: #ffffff;
+                padding: 16px 32px;
+                border-radius: 8px;
+                box-shadow: 3px 3px 6px;
+            }
+            
+            #${config_id} .config_header {
+                position: relative;
+                font-size: 16px;
+                margin: 0 auto;
+                padding: 4px 8px;
+                background-color: #4682b4;
+                text-align: left;
+            }
+            
+            #${config_id} .config_header a {
+                display: inline-block;
+                color: #fefefe;
+                text-decoration: none;
+            }
+            
+            #${config_id} .section_header {
+                margin: 12px 0 6px;
+                padding-left: 4px;
+                font-size: 14px;
+                color: #4682b4;
+                background-color: transparent;
+                text-align: left;
+                border: none;
+                border-bottom: solid 2px #add8e6;
+            }
+            
+            #${config_id}_header-title-link {
+            }
+            
+            #${config_id}_header-donation-link {
+                position: absolute;
+                inset: auto 8px 4px auto ;
+                font-size: 12px;
+            }
+            
+            #${config_id} button,
+            #${config_id} input[type="button"],
+            #${config_id} input[type="submit"] {
+                cursor: pointer;
+            }
+            
+            #${config_id} .warning {
+                font-weight: bolder;
+                color: #ee0000;
+            }
+            
+            #${config_id}_saveBtn {
+            }
+            
+            #${config_id}_save-status {
+                display: inline-block;
+                vertical-align: middle;
+            }
+            
+            #${config_id} .config_var {
+                padding-left: 4px;
+                border-bottom: dotted 1px #add8e6;
+            }
+            
+            #${config_id} .field_label {
+                display: inline-block;
+                min-width: 50%;
+            }
+            
+            #${config_id} .config_var > div[id] {
+                display: inline-block;
+            }
+            
+            #${config_id}_DISPLAY_ALL_IN_ONE_PAGE_var {
+                display: none;
+            }
+        `,
+    } );
+    
+    GM_registerMenuCommand( messages.SETTINGS, () => GM_config.open() );
+    
+    Object.assign( user_options, get_config_value_map() );
+    
+    return user_options;
+} // end of init_gm_menu()
+
 if ( is_extension() ) {
     // Google Chorme 拡張機能から実行した場合、ユーザーオプションを読み込む
     w.twOpenOriginalImage_chrome_init( function ( user_options ) {
         initialize( user_options );
     } );
+}
+else if ( typeof GM_config != 'undefined' ) {
+    init_gm_menu().then( user_options => initialize( user_options ) );
 }
 else {
     initialize();
