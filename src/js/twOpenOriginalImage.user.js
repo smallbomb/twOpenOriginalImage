@@ -3,6 +3,7 @@
 // @name:ja         Twitter 原寸びゅー
 // @namespace       http://furyu.hatenablog.com/
 // @author          furyu
+// @license         MIT
 // @version         0.1.8.19
 // @include         http://twitter.com/*
 // @include         https://twitter.com/*
@@ -25,6 +26,8 @@
 // @homepageURL     https://github.com/furyutei/twOpenOriginalImage/
 // @supportURL      https://github.com/furyutei/twOpenOriginalImage/issues
 // @contributionURL https://memo.furyutei.com/about#send_donation
+// @compatible      chrome+tampermonkey
+// @compatible      firefox+violentmonkey
 // ==/UserScript==
 
 /*
@@ -4852,7 +4855,7 @@ async function init_gm_menu() {
                 header_link.id = `${config_id}_header-title-link`;
                 header_link.textContent = config_header.textContent;
                 header_link.target = '_blank';
-                header_link.href = GM_info.script.homepage;
+                header_link.href = GM_info.script.homepage || 'https://github.com/furyutei/twOpenOriginalImage/';
                 
                 donation_link.textContent = messages.DOMATION;
                 donation_link.id = `${config_id}_header-donation-link`;
