@@ -4,7 +4,7 @@
 // @namespace       http://furyu.hatenablog.com/
 // @author          furyu
 // @license         MIT
-// @version         0.1.8.19
+// @version         0.1.8.20
 // @include         http://twitter.com/*
 // @include         https://twitter.com/*
 // @include         https://mobile.twitter.com/*
@@ -2726,7 +2726,7 @@ function initialize( user_options ) {
                 
                 //img.src = link.href = img_url;
                 img.src = img_url;
-                link.href = ( tweet_url ) ? ( tweet_url + '/photo/' + ( index + 1 ) ) : img_url;
+                link.href = ( OPTIONS.SAME_FILENAME_AS_IN_ZIP && tweet_url ) ? ( tweet_url + '/photo/' + ( index + 1 ) ) : img_url;
                 
                 link.className = 'image-link';
                 link.appendChild( img );
