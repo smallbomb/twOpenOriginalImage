@@ -28,6 +28,7 @@ module.exports = {
         "GM_download": "readonly",
         "GM_config": "readonly",
         "GM_registerMenuCommand": "readonly",
+        "GM_info": "readonly",
         "OAuth": "readonly",
         "Twitter": "readonly",
         "ZipRequest": "readonly",
