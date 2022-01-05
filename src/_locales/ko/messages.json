@@ -80,6 +80,9 @@
 ,   "SUPPRESS_FILENAME_SUFFIX" : {
         "message" : "파일 이름의 접미사 (예 : -orig)를 표시하지 않습니다"
     }
+,   "SAME_FILENAME_AS_IN_ZIP" : {
+        "message" : "단독 다운로드 시 ZIP 파일과 동일한 파일명 사용"
+    }
 ,   "TAB_SORTING" : {
         "message" : "탭 정렬"
     }

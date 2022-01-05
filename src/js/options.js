@@ -74,6 +74,7 @@ $( function () {
         ,   { key : 'SWAP_IMAGE_URL', val : false }
         ,   { key : 'HIDE_DOWNLOAD_BUTTON_AUTOMATICALLY', val : true }
         ,   { key : 'SUPPRESS_FILENAME_SUFFIX', val : false }
+        ,   { key : 'SAME_FILENAME_AS_IN_ZIP', val : true }
         ,   { key : 'TAB_SORTING', val : true }
         ],
         INT_KV_LIST = [

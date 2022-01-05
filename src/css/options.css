@@ -52,14 +52,14 @@ form#form_command {
 h2 {
     margin: 0;
     padding: 2px 8px;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: bolder;
     color: #544a47;
     border-bottom: solid 2px #544a47;
 }
 
 div.opt {
-    margin: 4px 16px 6px 16px;
+    margin: 2px 16px 3px 16px;
 }
 
 p {
