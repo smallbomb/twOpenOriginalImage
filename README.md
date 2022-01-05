@@ -5,15 +5,18 @@ twOpenOriginalImage
 ### user script (Greasemonkey / Tampermonkey）
 > [smallbomb modifyー(twOpenOriginalImage.user.js)](https://github.com/smallbomb/twOpenOriginalImage/raw/master/src/js/twOpenOriginalImage.user.js) 
 
-!["example"](./img/example.png)
+!["example"](./img/example.jpg)
 
+# example 
+`[{mm}-{dd}]({username}){tweet_id}_img{i}.{ext}` => `[2021-10-06](Google)1445486492734816268_img1.jpg`
+
+# filename format
 ```js
-/* FORMAT_FILENAME support:
- *    filename:
+/*    filename:
  *      {base}
  *    tweet create date:
  *      {yyyy} => fullyear
- *      {mm} => Month
+ *      {mm} => month
  *      {dd} => day
  *      {HH} => hours
  *      {MM} => minutes
@@ -26,7 +29,7 @@ twOpenOriginalImage
  *    tweet id:
  *      {tweet_id}
  *    tweet text:
- *      {twtext} => first line if tweet text have new line character('\n').
+ *      {twtext} => first line only
  *    suffix:
  *      {suffix} => '-orig'
  *    extension:
