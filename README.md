@@ -1,6 +1,6 @@
 twOpenOriginalImage
 ========================================
-- add to specify the file name format based on https://github.com/furyutei/twOpenOriginalImage (ver.0.1.8.16)
+- add to specify the file name format based on https://github.com/furyutei/twOpenOriginalImage (ver.0.1.8.20)
 
 ### user script (Greasemonkey / Tampermonkey）
 > [smallbomb modifyー(twOpenOriginalImage.user.js)](https://github.com/smallbomb/twOpenOriginalImage/raw/master/src/js/twOpenOriginalImage.user.js) 
