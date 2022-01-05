@@ -5,6 +5,8 @@ twOpenOriginalImage
 ### user script (Greasemonkey / Tampermonkey）
 > [smallbomb modifyー(twOpenOriginalImage.user.js)](https://github.com/smallbomb/twOpenOriginalImage/raw/master/src/js/twOpenOriginalImage.user.js) 
 
+!["example"](./img/example.png)
+
 ```js
 /* FORMAT_FILENAME support:
  *    filename:
@@ -30,13 +32,4 @@ twOpenOriginalImage
  *    extension:
  *      {ext}
  */
-
-/* code example */
-var OPTIONS = {
- ...
- ...
- ...
-, FORMAT_FILENAME: '[{yyyy}-{mm}-{dd}]({username}){twtext}_{tweet_id}_{i}.{ext}' // you can modify it!
-  // => [2021-10-06](Google)Available now_ the new indoor #NestCam (wired) from Google. _1445486492734816268_1.jpg
-}
-
+```
