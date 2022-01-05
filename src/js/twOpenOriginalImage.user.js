@@ -164,31 +164,7 @@ var OPTIONS = {
 ,   SMOOTH_SCROLL_INTERVAL : 10 // オーバーレイ表示時のスムーズスクロールの間隔(ms)
 ,   DEFAULT_IMAGE_SIZE : 'fit-window' // オーバーレイ表示時の画像幅初期値 ( 'full' / 'fit-width' / 'fit-height' / 'fit-window' )
 ,   DEFAULT_IMAGE_BACKGROUND_COLOR : 'black' // オーバーレイ表示時の画像背景色初期値 ('black' または 'white')
-,   FORMAT_FILENAME: '[{yyyy}-{mm}-{dd}]({username}){twtext}_{tweet_id}_{i}.{ext}'
-/* FORMAT_FILENAME support:
- *    filename:
- *      {base}
- *    tweet create date:
- *      {yyyy} => fullyear
- *      {mm} => Month
- *      {dd} => day
- *      {HH} => hours
- *      {MM} => minutes
- *      {SS} => seconds
- *    author:
- *      {fullname} => nickname
- *      {username} => account
- *    image index:
- *      {i} => 1, 2, ...
- *    tweet id:
- *      {tweet_id}
- *    tweet text:
- *      {twtext} => first line only if tweet text have new line character('\n').
- *    suffix:
- *      {suffix} => '-orig'
- *    extension:
- *      {ext}
- */
+,   FORMAT_FILENAME: ''
 };
 
 const img_filename_format = ( base, yyyy, mm, dd, HH, MM, SS, fullname, username, i, tweet_id, twtext, suffix, ext ) => {
@@ -846,7 +822,7 @@ function get_img_url_orig( img_url ) {
 } // end of get_img_url_orig()
 
 
-function get_img_filename( img_url ) {
+function get_img_filename( img_url, zip_filename = false ) {
     img_url = normalize_img_url( img_url );
     
     if ( ! img_url.match( /^.+\/([^\/.]+)\.(\w+):(\w+)$/ ) ) {
@@ -871,13 +847,15 @@ function get_img_filename( img_url ) {
         i = img_urls.findIndex(img_url => img_url.indexOf(base) >= 0) + 1,
         tweet_id = get_tweet_id_from_tweet_url(image_overlay_close_link.href),
         twtext = image_overlay_close_link.title.slice(0, image_overlay_close_link.title.indexOf("\n"));
-    return img_filename_format(base, yyyy, mm, dd, HH, MM, SS, fullname, username, i, tweet_id, twtext, suffix, ext);
-    // if ( OPTIONS.SUPPRESS_FILENAME_SUFFIX ) {
-    //     return base + '.' + ext;
-    // }
-    // else {
-    //    return base + '-' + suffix + '.' + ext;
-    // }
+    if (OPTIONS.FORMAT_FILENAME !== '' && !zip_filename) {
+        return img_filename_format(base, yyyy, mm, dd, HH, MM, SS, fullname, username, i, tweet_id, twtext, suffix, ext);
+    }
+    else if ( OPTIONS.SUPPRESS_FILENAME_SUFFIX ) {
+        return base + '.' + ext;
+    }
+    else {
+       return base + '-' + suffix + '.' + ext;
+    }
 } // end of get_img_filename()
 
 
@@ -1312,7 +1290,7 @@ function download_zip( tweet_info_json ) {
             
             function add_img_info( img_url, arrayBuffer ) {
                 var img_info = {
-                        filename : get_img_filename( img_url )
+                        filename : get_img_filename( img_url, true )
                     ,   arrayBuffer : ( arrayBuffer ) ? arrayBuffer : ''
                     };
                 
@@ -2678,7 +2656,7 @@ function initialize( user_options ) {
                     var download_link = create_download_link( img_url, target_document ),
                         download_link_container = import_node( download_link_container_template, target_document ),
                         mouse_click = object_extender( MouseClick ).init( download_link ),
-                        img_filename = ( OPTIONS.SAME_FILENAME_AS_IN_ZIP ) ? ( filename_prefix + '-img' + ( index + 1 ) + '.' + get_img_extension( img_url ) ) : download_link.download;
+                        img_filename = ( OPTIONS.SAME_FILENAME_AS_IN_ZIP && OPTIONS.FORMAT_FILENAME === '' ) ? ( filename_prefix + '-img' + ( index + 1 ) + '.' + get_img_extension( img_url ) ) : download_link.download;
                     
                     download_link.href = img_url;
                     
@@ -4893,6 +4871,12 @@ async function init_gm_menu() {
                 default : OPTIONS.SUPPRESS_FILENAME_SUFFIX,
             },
             
+            FORMAT_FILENAME: {
+                label: 'filename format',
+                type: 'text',
+                default: OPTIONS.FORMAT_FILENAME,
+            },
+
             OPERATION : {
                 label : messages.OPERATION,
                 type : 'checkbox',
