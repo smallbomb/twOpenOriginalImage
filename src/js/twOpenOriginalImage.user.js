@@ -188,7 +188,7 @@ var OPTIONS = {
  *      {suffix} => '-orig'
  *    extension:
  *      {ext}
- */    
+ */
 };
 
 const img_filename_format = ( base, yyyy, mm, dd, HH, MM, SS, fullname, username, i, tweet_id, twtext, suffix, ext ) => {
@@ -276,7 +276,7 @@ switch ( LANGUAGE ) {
         OPTIONS.HELP_OVERLAY_SHORTCUT_BGCOLOR_BLACK = '黒';
         OPTIONS.HELP_OVERLAY_SHORTCUT_BGCOLOR_WHITE = '白';
         break;
-    default :
+    default:
         OPTIONS.TITLE_PREFIX = 'IMG: ';
         OPTIONS.TWEET_LINK_TEXT = 'Tweet';
         OPTIONS.CLOSE_TEXT = 'Close [Esc]';
