@@ -8,7 +8,7 @@ twOpenOriginalImage
 !["example"](./img/example.jpg)
 
 ### example 
-`[{mm}-{dd}]({username}){tweet_id}_img{i}.{ext}` => `[2021-10-06](Google)1445486492734816268_img1.jpg`
+`[{mm}-{dd}]({username}){tweet_id}_img{i}.{ext}` => `[10-06](Google)1445486492734816268_img1.jpg`
 
 ### support filename format
 ```js
