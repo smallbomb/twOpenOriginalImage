@@ -2822,7 +2822,7 @@ function initialize( user_options ) {
             if ( is_react_twitter() ) {
                 //fullname_container = tweet.querySelector( 'a[role="link"] [dir="auto"] > span > span[dir="auto"]' );
                 //fullname_container = tweet.querySelector( 'a[role="link"] [dir="auto"] > span' );
-                fullname_container = tweet.querySelector('div[data-testid="User-Names"] a[role="link"] [dir="ltr"] > span');
+                fullname_container = tweet.querySelector('div[data-testid="User-Name"] a[role="link"] [dir="ltr"] > span');
                 //fullname = ( fullname_container ) ? fullname_container.textContent.trim() : '';
                 fullname = ( fullname_container ) ? get_text_from_element( fullname_container ).trim() : '';
                 username_container = ( fullname_container ) ? search_ancestor_by_attribute( fullname_container, 'role', 'link' ) : null;
