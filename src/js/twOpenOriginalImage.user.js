@@ -4,10 +4,12 @@
 // @namespace       http://furyu.hatenablog.com/
 // @author          furyu
 // @license         MIT
-// @version         0.1.8.20
+// @version         0.1.8.20.8
 // @include         http://twitter.com/*
 // @include         https://twitter.com/*
+// @include         https://x.com/*
 // @include         https://mobile.twitter.com/*
+// @include         https://mobile.x.com/*
 // @include         https://pbs.twimg.com/media/*
 // @include         https://tweetdeck.twitter.com/*
 // @grant           GM_getValue
@@ -18,9 +20,12 @@
 // @require         https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.4/jszip.min.js
 // @require         https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.3/FileSaver.min.js
 // @require         https://cdn.jsdelivr.net/gh/sizzlemctwizzle/GM_config@43fd0fe4de1166f343883511e53546e87840aeaf/gm_config.js
+// @require         https://gist.githubusercontent.com/smallbomb/9dc2e50cbda96a26661f71d0926d49ef/raw/a3c9477faf424572534a09f9fead30f895ba33b6/x-client-transaction-id.min.js
 // @connect         twitter.com
+// @connect         x.com
 // @connect         twimg.com
 // @connect         furyutei.github.io
+// @connect         raw.githubusercontent.com
 // @description     Open images in original size on Twitter.
 // @description:ja  Web版Twitter・TweetDeckで、原寸画像の表示と保存が簡単にできるようになります。
 // @homepageURL     https://github.com/furyutei/twOpenOriginalImage/
@@ -28,6 +33,8 @@
 // @contributionURL https://memo.furyutei.com/about#send_donation
 // @compatible      chrome+tampermonkey
 // @compatible      firefox+violentmonkey
+// @downloadURL     https://github.com/smallbomb/twOpenOriginalImage/raw/master/src/js/twOpenOriginalImage.user.js
+// @updateURL       https://github.com/smallbomb/twOpenOriginalImage/raw/master/src/js/twOpenOriginalImage.user.js
 // ==/UserScript==
 
 /*
@@ -86,6 +93,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+
+const transaction = new ClientTransaction.ClientTransaction(document.cloneNode(true));
+await transaction.initialize();
+
 Date.prototype.format = function (format) {
     format = format.replace(/yyyy/g, this.getFullYear());
     format = format.replace(/yy/g, ('' + this.getFullYear()).slice(-2));
@@ -128,7 +139,7 @@ if ( IS_TOUCHED ) {
 }
     
 
-if ( /^https:\/\/twitter\.com\/i\/cards/.test( w.location.href ) ) {
+if ( /^https:\/\/(twitter|x)\.com\/i\/cards/.test( w.location.href ) ) {
     // https://twitter.com/i/cards/～ では実行しない
     return;
 }
@@ -165,6 +176,33 @@ var OPTIONS = {
 ,   DEFAULT_IMAGE_SIZE : 'fit-window' // オーバーレイ表示時の画像幅初期値 ( 'full' / 'fit-width' / 'fit-height' / 'fit-window' )
 ,   DEFAULT_IMAGE_BACKGROUND_COLOR : 'black' // オーバーレイ表示時の画像背景色初期値 ('black' または 'white')
 ,   FORMAT_FILENAME: ''
+/*
+ * example: [{yyyy}-{mm}-{dd}]({username}){twtext}_{tweet_id}_{i}.{ext}
+ *
+ * FORMAT_FILENAME support:
+ *    filename:
+ *      {base}
+ *    tweet create date:
+ *      {yyyy} => fullyear
+ *      {mm} => Month
+ *      {dd} => day
+ *      {HH} => hours
+ *      {MM} => minutes
+ *      {SS} => seconds
+ *    author:
+ *      {fullname} => nickname
+ *      {username} => account
+ *    image index:
+ *      {i} => 1, 2, ...
+ *    tweet id:
+ *      {tweet_id}
+ *    tweet text:
+ *      {twtext} => first line only if tweet text have new line character('\n').
+ *    suffix:
+ *      {suffix} => '-orig'
+ *    extension:
+ *      {ext}
+ */
 };
 
 const img_filename_format = ( base, yyyy, mm, dd, HH, MM, SS, fullname, username, i, tweet_id, twtext, suffix, ext ) => {
@@ -197,8 +235,8 @@ var DEBUG = false,
         };
     }, // end of make_is_url_function()
     
-    is_twitter = make_is_url_function( /^https?:\/\/(?:mobile\.)?twitter\.com\// ),
-    is_tweetdeck = make_is_url_function( /^https?:\/\/tweetdeck\.twitter\.com\// ),
+    is_twitter = make_is_url_function( /^https?:\/\/(?:mobile\.)?(twitter|x)\.com\// ),
+    is_tweetdeck = make_is_url_function( /^https?:\/\/tweetdeck\.(twitter|x)\.com\// ),
     is_media_url = make_is_url_function( /^https?:\/\/pbs\.twimg\.com\/media\// ),
     is_react_twitter = ( () => {
         var is_react = is_twitter() && ( !! d.querySelector( 'div#react-root' ) );
@@ -761,7 +799,7 @@ function get_img_extension( img_url, extension_list ) {
     
     var extension = '';
     
-    extension_list = ( extension_list ) ? extension_list : [ 'png', 'jpg', 'gif' ];
+    extension_list = ( extension_list ) ? extension_list : [ 'png', 'jpg', 'gif', 'webp' ];
     
     if ( img_url.match( new RegExp( '\.(' + extension_list.join('|') + ')' ) ) ) {
         extension = RegExp.$1;
@@ -806,7 +844,7 @@ function get_img_url( img_url, kind, old_format ) {
             img_url += ':' + kind;
         }
         
-        img_url = img_url.replace( /\.([^.]+):\w*$/, '' ) + '?format=' + RegExp.$1 + '&name=' + kind;
+        img_url = img_url.replace( /\.([^.]+):\w*$/, '' ) + '?format=' + (RegExp.$1 === 'webp' ? 'jpg' : RegExp.$1) + '&name=' + kind;
     }
     
     return img_url;
@@ -814,7 +852,7 @@ function get_img_url( img_url, kind, old_format ) {
 
 
 function get_img_url_orig( img_url ) {
-    if ( /^https?:\/\/ton\.twitter\.com\//.test( img_url ) ) {
+    if ( /^https?:\/\/ton\.(twitter|x)\.com\//.test( img_url ) ) {
         // DM の画像は :orig が付かないものが最大
         return get_img_url( img_url );
     }
@@ -860,7 +898,7 @@ function get_img_filename( img_url, zip_filename = false ) {
 
 
 function get_tweet_id_from_tweet_url( tweet_url ) {
-    if ( tweet_url.match( /^(?:https?:\/\/(?:mobile\.)?twitter\.com)?\/[^\/]+\/status(?:es)?\/(\d+).*$/ ) ) {
+    if ( tweet_url.match( /^(?:https?:\/\/(?:mobile\.)?(?:twitter|x)\.com)?\/[^\/]+\/status(?:es)?\/(\d+).*$/ ) ) {
         return RegExp.$1;
     }
     return null;
@@ -968,8 +1006,10 @@ async function transfer_data_api_v1_format(response, tweet_id) {
     let result = resp;
     for (let i = 0; i < resp.data.threaded_conversation_with_injections_v2.instructions[0].entries.length; i++) {
         if (resp.data.threaded_conversation_with_injections_v2.instructions[0].entries[i].entryId.indexOf(tweet_id) >= 0) {
-            result = resp.data.threaded_conversation_with_injections_v2.instructions[0].entries[i].content.itemContent.tweet_results.result.legacy;
-            result.user =  resp.data.threaded_conversation_with_injections_v2.instructions[0].entries[i].content.itemContent.tweet_results.result.core.user_results.result.legacy;
+            result = resp.data.threaded_conversation_with_injections_v2.instructions[0].entries[i].content.itemContent.tweet_results.result.tweet?.legacy ??
+                     resp.data.threaded_conversation_with_injections_v2.instructions[0].entries[i].content.itemContent.tweet_results.result.legacy;
+            result.user = resp.data.threaded_conversation_with_injections_v2.instructions[0].entries[i].content.itemContent.tweet_results.result.tweet?.core.user_results.result.legacy ??
+                          resp.data.threaded_conversation_with_injections_v2.instructions[0].entries[i].content.itemContent.tweet_results.result.core.user_results.result.legacy;
             break;
         }
     }
@@ -977,44 +1017,92 @@ async function transfer_data_api_v1_format(response, tweet_id) {
 } // end of transfer_api1_format()
 
 
-function fetch_status( tweet_id ) {
+const getTweetDetailQueryID = (function () {
+    let queryId;
+    return async function () {
+        if (queryId) return queryId;
+
+        const mainJSURLRegex = /^https:\/\/abs\.twimg\.com\/responsive-web\/client-web\/main\.[a-f0-9]+\.js$/;
+        let mainJSURL;
+        document.querySelectorAll('link').forEach(link => {
+            if (mainJSURLRegex.test(link.href)) {
+                mainJSURL = link.href;
+            }
+        });
+        let mainJSString = await fetch(mainJSURL)
+                                 .then(response => response.text())
+                                 .then(data => data.replaceAll(' ', ''));
+
+        const regex = new RegExp(`{\\s*queryId:"[^"]*",\\s*operationName:"TweetDetail",\\s*operationType:"query",\\s*metadata:{\\s*featureSwitches:[^}]*,\\s*fieldToggles:[^}]*}\\s*}`, 'g');
+        const match = regex.exec(mainJSString);
+        if (match) {
+            const result = match[0].replace(/(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '"$2":');
+            return queryId = JSON.parse(result)['queryId'];
+        } else {
+            return null;
+        }
+    }
+})();
+
+
+async function fetch_status( tweet_id ) {
     let variables = {
         "focalTweetId": tweet_id,
         "with_rux_injections":false,
+        "rankingMode": "Relevance",
         "includePromotedContent":false,
         "withCommunity":false,
         "withQuickPromoteEligibilityTweetFields":false,
         "withBirdwatchNotes":false,
-        "withVoice":false,
-        "withV2Timeline":true
+        "withVoice":false
     };
     let features = {
-        "rweb_lists_timeline_redesign_enabled":false,
-        "responsive_web_graphql_exclude_directive_enabled":false,
+        "rweb_video_screen_enabled":false,
+        "profile_label_improvements_pcf_label_in_post_enabled":false,
+        "rweb_tipjar_consumption_enabled":false,
         "verified_phone_label_enabled":false,
         "creator_subscriptions_tweet_preview_api_enabled":false,
         "responsive_web_graphql_timeline_navigation_enabled":false,
         "responsive_web_graphql_skip_user_profile_image_extensions_enabled":false,
-        "tweetypie_unmention_optimization_enabled":false,
-        "responsive_web_edit_tweet_api_enabled":false,
+        "premium_content_api_read_enabled":false,
+        "communities_web_enable_tweet_community_results_fetch":false,
+        "c9s_tweet_anatomy_moderator_badge_enabled":false,
+        "responsive_web_grok_analyze_button_fetch_trends_enabled":false,
+        "responsive_web_grok_analyze_post_followups_enabled":false,
+        "responsive_web_jetfuel_frame":false,
+        "responsive_web_grok_share_attachment_enabled":false,
+        "articles_preview_enabled":false,
+        "responsive_web_edit_tweet_api_enabled": false,
         "graphql_is_translatable_rweb_tweet_is_translatable_enabled":false,
-        "view_counts_everywhere_api_enabled":true,"longform_notetweets_consumption_enabled":false,
+        "view_counts_everywhere_api_enabled":true,
+        "longform_notetweets_consumption_enabled":false,
         "responsive_web_twitter_article_tweet_consumption_enabled":false,
         "tweet_awards_web_tipping_enabled":false,
+        "responsive_web_grok_show_grok_translated_post":false,
+        "responsive_web_grok_analysis_button_from_backend":false,
+        "creator_subscriptions_quote_tweet_preview_enabled":false,
         "freedom_of_speech_not_reach_fetch_enabled":false,
         "standardized_nudges_misinfo":false,
         "tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled":false,
         "longform_notetweets_rich_text_read_enabled":false,
         "longform_notetweets_inline_media_enabled":false,
-        "responsive_web_media_download_video_enabled":false,
+        "responsive_web_grok_image_annotation_enabled":false,
         "responsive_web_enhance_cards_enabled":false
     };
     let fieldToggles = {
         "withAuxiliaryUserLabels":false,
         "withArticleRichContentState":false
     };
+
+    const queryId = await getTweetDetailQueryID();
+
+    const transactionId = await transaction.generateTransactionId(
+        "GET", // HTTP method
+        `/i/api/graphql/${queryId}/TweetDetail` // API path
+    );
+
     return fetch(
-        ( is_react_twitter() ? 'https://twitter.com/i/api' : 'https://api.twitter.com' ) + '/graphql/-Ls3CrSQNo2fRKH6i6Na1A/TweetDetail?variables=' + encodeURIComponent(JSON.stringify(variables)) + '&features=' + encodeURIComponent(JSON.stringify(features)) + '&fieldToggles=' + encodeURIComponent(JSON.stringify(fieldToggles)), {
+        ( is_react_twitter() ? 'https://x.com/i/api' : 'https://api.x.com' ) + `/graphql/${queryId}/TweetDetail?variables=` + encodeURIComponent(JSON.stringify(variables)) + '&features=' + encodeURIComponent(JSON.stringify(features)) + '&fieldToggles=' + encodeURIComponent(JSON.stringify(fieldToggles)), {
         method: 'GET',
         headers: {
             'authorization' : 'Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA',
@@ -1022,6 +1110,7 @@ function fetch_status( tweet_id ) {
             'x-twitter-active-user' : 'yes',
             'x-twitter-auth-type' : 'OAuth2Session',
             'x-twitter-client-language' : 'en',
+            'x-client-transaction-id': transactionId,
         },
         mode: 'cors',
         credentials : 'include',
@@ -1260,7 +1349,7 @@ function save_base64( filename, base64, mimetype ) {
 
 
 function get_filename_prefix( tweet_url ) {
-    return tweet_url.replace( /^https?:\/\/(?:mobile\.)?twitter\.com\/([^\/]+)\/status(?:es)?\/(\d+).*$/, '$1-$2' );
+    return tweet_url.replace( /^https?:\/\/(?:mobile\.)?(?:twitter|x)\.com\/([^\/]+)\/status(?:es)?\/(\d+).*$/, '$1-$2' );
 } // end of get_filename_prefix()
 
 
@@ -1460,7 +1549,7 @@ function initialize_download_helper() {
     
     var img_url = w.location.href,
         img_referrer = d.referrer,
-        is_child = /^https?:\/\/(?:tweetdeck\.|mobile\.)?twitter\.com\//.test( img_referrer ),
+        is_child = /^https?:\/\/(?:tweetdeck\.|mobile\.)?(twitter|x)\.com\//.test( img_referrer ),
         link = ( is_ie() ) ? null : create_download_link( img_url );
     
     if ( link && is_child ) {
@@ -1944,6 +2033,7 @@ function initialize( user_options ) {
                 img_style.maxWidth = '100%';
                 img_style.height = 'auto';
                 img_style.background = 'white';
+                img_style.display = 'inline';
                 
                 return img_template;
             } )(),
@@ -4739,7 +4829,7 @@ async function init_gm_menu() {
             return [ 'ja', 'en' ].includes( LANGUAGE ) ? LANGUAGE : 'en';
         } )(),
         messages = await gm_xhr_promise( {
-            url : 'https://furyutei.github.io/twOpenOriginalImage/src/_locales/' + language + '/messages.json',
+            url : 'https://raw.githubusercontent.com/smallbomb/twOpenOriginalImage/master/src/_locales/' + language + '/messages.json',
         } )
         .then( response => {
             var message_map =  response.response;
@@ -4960,7 +5050,7 @@ async function init_gm_menu() {
                 header_link.id = `${config_id}_header-title-link`;
                 header_link.textContent = config_header.textContent;
                 header_link.target = '_blank';
-                header_link.href = GM_info.script.homepage || 'https://github.com/furyutei/twOpenOriginalImage/';
+                header_link.href = GM_info.script.homepage || 'https://github.com/smallbomb/twOpenOriginalImage/';
                 
                 donation_link.textContent = messages.DOMATION;
                 donation_link.id = `${config_id}_header-donation-link`;
